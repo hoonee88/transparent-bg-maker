@@ -50,6 +50,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            PREFETCH_MODELS=1
+            cache-to: type=gha,mode=max
+            build-args: |
+              PREFETCH_MODELS=1
+              PREFETCH_MODELS_LIST=bria-rmbg,birefnet-general-lite,isnet-general-use

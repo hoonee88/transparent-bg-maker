@@ -48,6 +48,30 @@ DIST_DIR = ROOT_DIR / "dist"
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "12")) * 1024 * 1024
 MAX_IMAGE_MEGAPIXELS = float(os.getenv("MAX_IMAGE_MEGAPIXELS", "12"))
 INFERENCE_CONCURRENCY = int(os.getenv("INFERENCE_CONCURRENCY", "1"))
+DEPLOYMENT_PROFILE = os.getenv("DEPLOYMENT_PROFILE", "standard").strip().lower()
+
+requested_default_preset = os.getenv(
+    "DEFAULT_PRESET",
+    "fast" if DEPLOYMENT_PROFILE == "free" else "pro",
+).strip()
+DEFAULT_PRESET = requested_default_preset if requested_default_preset in MODEL_PRESETS else "fast"
+
+enabled_preset_names = [
+    preset.strip()
+    for preset in os.getenv(
+        "ENABLED_PRESETS",
+        DEFAULT_PRESET if DEPLOYMENT_PROFILE == "free" else ",".join(MODEL_PRESETS.keys()),
+    ).split(",")
+    if preset.strip() in MODEL_PRESETS
+]
+
+if not enabled_preset_names:
+    enabled_preset_names = [DEFAULT_PRESET]
+
+AVAILABLE_MODEL_PRESETS = {preset: MODEL_PRESETS[preset] for preset in enabled_preset_names}
+
+if DEFAULT_PRESET not in AVAILABLE_MODEL_PRESETS:
+    DEFAULT_PRESET = next(iter(AVAILABLE_MODEL_PRESETS))
 
 app = FastAPI(title="Transparent Background Maker", version="0.3.0")
 inference_semaphore = asyncio.Semaphore(max(1, INFERENCE_CONCURRENCY))
@@ -287,8 +311,9 @@ def health():
     return {
         "ok": True,
         "engine": "rembg",
-        "defaultPreset": "pro",
-        "presets": MODEL_PRESETS,
+        "deploymentProfile": DEPLOYMENT_PROFILE,
+        "defaultPreset": DEFAULT_PRESET,
+        "presets": AVAILABLE_MODEL_PRESETS,
         "limits": {
             "maxUploadMb": MAX_UPLOAD_BYTES // 1024 // 1024,
             "maxImageMegapixels": MAX_IMAGE_MEGAPIXELS,
@@ -300,12 +325,12 @@ def health():
 @app.post("/api/remove-background")
 async def remove_background(
     file: UploadFile = File(...),
-    preset: str = Form("best"),
+    preset: str = Form(DEFAULT_PRESET),
     alpha_matting: bool = Form(True),
     edge_smooth: int = Form(3),
     erode: int = Form(1),
 ):
-    if preset not in MODEL_PRESETS:
+    if preset not in AVAILABLE_MODEL_PRESETS:
         raise HTTPException(status_code=400, detail="Unknown model preset")
 
     if file.content_type not in ALLOWED_CONTENT_TYPES:

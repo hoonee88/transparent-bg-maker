@@ -2,6 +2,11 @@ import './styles.css';
 
 type AppState = 'empty' | 'ready' | 'processing' | 'done' | 'error';
 type QualityMode = 'pro' | 'best' | 'balanced' | 'fast';
+type ServerConfig = {
+  defaultPreset?: string;
+  deploymentProfile?: string;
+  presets?: Partial<Record<QualityMode, unknown>>;
+};
 
 const apiBaseUrl = import.meta.env.DEV ? 'http://127.0.0.1:7000/api' : '/api';
 
@@ -56,28 +61,28 @@ app.innerHTML = `
 
           <fieldset class="quality-card" id="qualityCard">
             <legend>처리 품질</legend>
-            <label class="quality-option">
+            <label class="quality-option" data-quality="pro">
               <input type="radio" name="qualityMode" value="pro" checked />
               <span>
                 <strong>프로</strong>
                 <small>BRIA + BiRefNet Lite</small>
               </span>
             </label>
-            <label class="quality-option">
+            <label class="quality-option" data-quality="best">
               <input type="radio" name="qualityMode" value="best" />
               <span>
                 <strong>최고품질</strong>
                 <small>BRIA RMBG 모델</small>
               </span>
             </label>
-            <label class="quality-option">
+            <label class="quality-option" data-quality="balanced">
               <input type="radio" name="qualityMode" value="balanced" />
               <span>
                 <strong>균형</strong>
                 <small>BiRefNet General Lite</small>
               </span>
             </label>
-            <label class="quality-option">
+            <label class="quality-option" data-quality="fast">
               <input type="radio" name="qualityMode" value="fast" />
               <span>
                 <strong>빠름</strong>
@@ -177,6 +182,9 @@ let resultUrl: string | null = null;
 let resultBlob: Blob | null = null;
 let visibleImage: 'original' | 'result' = 'original';
 let selectedQuality: QualityMode = 'pro';
+let availableQualityModes = new Set<QualityMode>(Object.keys(qualityModes) as QualityMode[]);
+
+const isQualityMode = (value: string): value is QualityMode => value in qualityModes;
 
 const setState = (state: AppState, text: string) => {
   document.body.dataset.state = state;
@@ -187,11 +195,54 @@ const setState = (state: AppState, text: string) => {
   resultTab.disabled = !resultUrl;
   fileInput.disabled = state === 'processing';
   qualityInputs.forEach((input) => {
-    input.disabled = state === 'processing';
+    input.disabled = state === 'processing' || !availableQualityModes.has(input.value as QualityMode);
   });
   refineInputs.forEach((input) => {
     input.disabled = state === 'processing';
   });
+};
+
+const applyServerConfig = (config: ServerConfig) => {
+  const availableFromServer = Object.keys(config.presets ?? {}).filter(isQualityMode);
+
+  if (availableFromServer.length) {
+    availableQualityModes = new Set(availableFromServer);
+  }
+
+  const configuredDefault = config.defaultPreset && isQualityMode(config.defaultPreset) ? config.defaultPreset : null;
+  selectedQuality = configuredDefault && availableQualityModes.has(configuredDefault)
+    ? configuredDefault
+    : [...availableQualityModes][0] ?? selectedQuality;
+
+  qualityInputs.forEach((input) => {
+    const mode = input.value as QualityMode;
+    const isAvailable = availableQualityModes.has(mode);
+    const option = input.closest<HTMLLabelElement>('.quality-option');
+
+    input.checked = mode === selectedQuality;
+    input.disabled = !isAvailable;
+
+    if (option) {
+      option.hidden = !isAvailable;
+    }
+  });
+
+  if (config.deploymentProfile === 'free') {
+    message.textContent = '무료 배포 모드입니다. 서버 메모리 보호를 위해 빠름 모드로 실행합니다.';
+  }
+
+  setState(currentFile ? 'ready' : 'empty', currentFile ? '대기 중' : '준비됨');
+};
+
+const loadServerConfig = async () => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/health`);
+    if (!response.ok) return;
+
+    applyServerConfig(await response.json() as ServerConfig);
+  } catch (error) {
+    console.warn('Unable to load server config', error);
+  }
 };
 
 const setProgress = (percent: number) => {
@@ -362,6 +413,7 @@ resetButton.addEventListener('click', resetAll);
 qualityInputs.forEach((input) => {
   input.addEventListener('change', () => {
     if (!input.checked) return;
+    if (!availableQualityModes.has(input.value as QualityMode)) return;
     selectedQuality = input.value as QualityMode;
     resetResult();
     renderPreview();
@@ -393,3 +445,4 @@ resultTab.addEventListener('click', () => {
 
 setState('empty', '준비됨');
 updateRefineLabels();
+void loadServerConfig();

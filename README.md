@@ -12,11 +12,11 @@ AI 배경 제거 웹앱입니다. 이미지를 업로드하면 로컬/서버에�
 
 - Runtime: Docker
 - Region: Singapore
-- Plan: Standard
+- Plan: Free
 - Health check: `/api/health`
 - Auto deploy: GitHub CI 통과 후 배포
 
-무료/저사양 인스턴스는 AI 모델 메모리 때문에 실패할 수 있습니다. 비용을 줄여 테스트만 할 때는 `render.yaml`의 `plan`을 `starter` 또는 `free`로 낮춰볼 수 있지만, 공개 서비스용으로는 `standard` 이상을 권장합니다.
+무료 인스턴스에서는 메모리 보호를 위해 `fast` 모델만 활성화합니다. 공개 서비스로 안정적으로 운영하려면 `render.yaml`의 `plan`을 `standard` 이상으로 올리고 `ENABLED_PRESETS` 값을 `pro,best,balanced,fast`처럼 확장하는 것을 권장합니다.
 
 ## 로컬 실행
 
