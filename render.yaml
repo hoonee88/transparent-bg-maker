@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: transparent-bg-maker-hoonee88
+    runtime: docker
+    repo: https://github.com/hoonee88/transparent-bg-maker
+    branch: main
+    plan: standard
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/health
+    numInstances: 1
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: MAX_UPLOAD_MB
+        value: "12"
+      - key: MAX_IMAGE_MEGAPIXELS
+        value: "12"
+      - key: INFERENCE_CONCURRENCY
+        value: "1"
+      - key: PUBLIC_ORIGINS
+        value: https://transparent-bg-maker-hoonee88.onrender.com
