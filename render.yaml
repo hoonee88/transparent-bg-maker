@@ -20,6 +20,8 @@ services:
         value: "4"
       - key: INFERENCE_CONCURRENCY
         value: "1"
+      - key: FAST_MODEL
+        value: u2netp
       - key: DEPLOYMENT_PROFILE
         value: free
       - key: DEFAULT_PRESET

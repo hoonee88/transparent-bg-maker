@@ -15,6 +15,8 @@ from PIL import Image, ImageFilter, ImageOps
 from rembg import new_session, remove
 
 
+FAST_MODEL = os.getenv("FAST_MODEL", "isnet-general-use").strip() or "isnet-general-use"
+
 MODEL_PRESETS = {
     "pro": {
         "model": "bria-rmbg + birefnet-general-lite",
@@ -35,10 +37,10 @@ MODEL_PRESETS = {
         "description": "lighter general-purpose salient object model",
     },
     "fast": {
-        "model": "isnet-general-use",
-        "models": ("isnet-general-use",),
-        "label": "IS-Net General",
-        "description": "good general-purpose model with lighter runtime",
+        "model": FAST_MODEL,
+        "models": (FAST_MODEL,),
+        "label": "Fast Cutout",
+        "description": "lightweight model for constrained servers",
     },
 }
 
@@ -350,6 +352,8 @@ async def remove_background(
     validate_image_size(image_bytes)
     edge_smooth = clamp(edge_smooth, 0, 5)
     erode = clamp(erode, 0, 3)
+    if DEPLOYMENT_PROFILE == "free":
+        alpha_matting = False
 
     try:
         async with inference_semaphore:

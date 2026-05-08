@@ -28,7 +28,7 @@ COPY scripts ./scripts
 COPY --from=frontend /app/dist ./dist
 
 ARG PREFETCH_MODELS=1
-ARG PREFETCH_MODELS_LIST=isnet-general-use
+ARG PREFETCH_MODELS_LIST=u2netp
 ENV PREFETCH_MODELS_LIST=${PREFETCH_MODELS_LIST}
 RUN if [ "$PREFETCH_MODELS" = "1" ]; then python scripts/prefetch_models.py; fi
 

@@ -16,7 +16,7 @@ AI 배경 제거 웹앱입니다. 이미지를 업로드하면 로컬/서버에�
 - Health check: `/api/health`
 - Auto deploy: GitHub CI 통과 후 배포
 
-무료 인스턴스에서는 메모리 보호를 위해 `fast` 모델만 활성화합니다. 공개 서비스로 안정적으로 운영하려면 `render.yaml`의 `plan`을 `standard` 이상으로 올리고 `ENABLED_PRESETS` 값을 `pro,best,balanced,fast`처럼 확장하는 것을 권장합니다.
+무료 인스턴스에서는 메모리 보호를 위해 `fast` 프리셋만 활성화하고, 실제 모델은 작은 `u2netp`로 실행합니다. 공개 서비스로 안정적으로 운영하려면 `render.yaml`의 `plan`을 `standard` 이상으로 올리고 `ENABLED_PRESETS` 값을 `pro,best,balanced,fast`처럼 확장하는 것을 권장합니다.
 
 ## 로컬 실행
 
